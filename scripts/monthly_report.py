@@ -51,6 +51,19 @@ def parse_entries(results):
     return entries
 
 
+def summarize(content, max_len=80):
+    if not content:
+        return ""
+    content = content.strip()
+    if len(content) <= max_len:
+        return content
+    for punct in ['。', '！', '？', '.', '!', '?', '\n']:
+        idx = content.find(punct, max_len // 2)
+        if idx != -1 and idx <= max_len:
+            return content[:idx + 1]
+    return content[:max_len] + "..."
+
+
 def build_monthly_report(entries):
     today = datetime.now()
     month_name = today.strftime('%Y年%m月')
@@ -58,55 +71,44 @@ def build_monthly_report(entries):
     if not entries:
         return f"📅 {month_name} 月報\n\n這個月沒有日記記錄，下個月加油！💪"
 
-    # 統計
-    tag_counts = {}
-    for e in entries:
-        for tag in e['tags']:
-            tag_counts[tag] = tag_counts.get(tag, 0) + 1
-
     learn_entries = [e for e in entries if 'Learn' in e['tags']]
     work_entries = [e for e in entries if 'Work' in e['tags']]
     family_entries = [e for e in entries if 'Family' in e['tags']]
     expense_entries = [e for e in entries if 'Expense' in e['tags']]
+    diary_entries = [e for e in entries if
+                     'Diary' in e['tags'] or 'Couple' in e['tags'] or 'Friends' in e['tags']
+                     or not e['tags']]
 
     report = f"📅 {month_name} 月報\n"
     report += f"{'='*30}\n\n"
-    report += f"📝 本月共記錄 {len(entries)} 則日記\n\n"
+    report += f"📝 本月共記錄 {len(entries)} 則\n\n"
 
-    # 月份回顧
-    report += "🗓 本月重要時刻：\n"
-    for e in entries:
-        if e['topic']:
-            report += f"  • {e['date']} {e['topic']}\n"
-    report += "\n"
+    def format_entries(label, emoji, elist):
+        if not elist:
+            return ""
+        block = f"{emoji} {label}（{len(elist)} 則）：\n"
+        for e in elist:
+            block += f"  [{e['date']}] {e['topic']}\n"
+            summary = summarize(e['content'])
+            if summary:
+                block += f"  　　{summary}\n"
+        return block + "\n"
 
-    # 學習成長
-    if learn_entries:
-        report += f"🧠 學習成長（{len(learn_entries)} 則）：\n"
-        for e in learn_entries:
-            report += f"  • {e['topic']}\n"
-        report += "\n"
+    report += format_entries("學習成長", "🧠", learn_entries)
+    report += format_entries("工作", "💼", work_entries)
+    report += format_entries("家人", "👨‍👩‍👧", family_entries)
+    report += format_entries("生活日記", "📔", diary_entries)
 
-    # 工作
-    if work_entries:
-        report += f"💼 工作記錄（{len(work_entries)} 則）：\n"
-        for e in work_entries:
-            report += f"  • {e['topic']}\n"
-        report += "\n"
-
-    # 家人
-    if family_entries:
-        report += f"👨‍👩‍👧 家人相關（{len(family_entries)} 則）：\n"
-        for e in family_entries:
-            report += f"  • {e['topic']}\n"
-        report += "\n"
-
-    # 花費
+    # 花費單獨處理（顯示金額）
     if expense_entries:
         report += f"💰 花費記錄（{len(expense_entries)} 則）：\n"
         for e in expense_entries:
-            short = e['content'][:40] if e['content'] else ''
-            report += f"  • {e['topic']}：{short}\n"
+            report += f"  [{e['date']}] {e['topic']}"
+            summary = summarize(e['content'], 40)
+            if summary:
+                report += f"：{summary}"
+            report += "\n"
+        report += "\n"
         report += "\n"
 
     report += "─" * 30 + "\n"

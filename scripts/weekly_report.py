@@ -48,6 +48,21 @@ def parse_entries(results):
     return entries
 
 
+def summarize(content, max_len=80):
+    """取內容摘要，在句號或換行處截斷"""
+    if not content:
+        return ""
+    content = content.strip()
+    if len(content) <= max_len:
+        return content
+    # 嘗試在句號處截斷
+    for punct in ['。', '！', '？', '.', '!', '?', '\n']:
+        idx = content.find(punct, max_len // 2)
+        if idx != -1 and idx <= max_len:
+            return content[:idx + 1]
+    return content[:max_len] + "..."
+
+
 def build_report(entries):
     today = datetime.now()
     week_start = (today - timedelta(days=7)).strftime('%m/%d')
@@ -56,50 +71,39 @@ def build_report(entries):
     if not entries:
         return f"📊 週報 {week_start} - {week_end}\n\n這週沒有日記記錄，下週加油！💪"
 
-    # 分類
+    # 分類（一則可能有多個 tag）
     learn_entries = [e for e in entries if 'Learn' in e['tags']]
     work_entries = [e for e in entries if 'Work' in e['tags']]
     family_entries = [e for e in entries if 'Family' in e['tags']]
-    diary_entries = [e for e in entries if 'Diary' in e['tags'] or not e['tags']]
+    expense_entries = [e for e in entries if 'Expense' in e['tags']]
+    diary_entries = [e for e in entries if
+                     'Diary' in e['tags'] or 'Couple' in e['tags'] or 'Friends' in e['tags']
+                     or not e['tags']]
 
     report = f"📊 本週週報 {week_start} - {week_end}\n"
     report += f"{'='*30}\n\n"
-    report += f"📝 共記錄 {len(entries)} 則日記\n\n"
+    report += f"📝 共記錄 {len(entries)} 則\n\n"
 
-    # 重要事件
-    report += "🗓 本週事件：\n"
-    for e in entries:
-        if e['topic']:
-            report += f"  • {e['date']} {e['topic']}\n"
-    report += "\n"
+    def format_entries(label, emoji, elist):
+        if not elist:
+            return ""
+        block = f"{emoji} {label}：\n"
+        for e in elist:
+            date_short = e['date'][5:] if e['date'] else ''  # MM-DD
+            block += f"  [{date_short}] {e['topic']}\n"
+            summary = summarize(e['content'])
+            if summary:
+                block += f"  　　{summary}\n"
+        return block + "\n"
 
-    # 學習成長
-    if learn_entries:
-        report += "🧠 學習與成長：\n"
-        for e in learn_entries:
-            report += f"  • {e['topic']}"
-            if e['content']:
-                report += f"：{e['content'][:50]}..."
-            report += "\n"
-        report += "\n"
-
-    # 工作
-    if work_entries:
-        report += "💼 工作記錄：\n"
-        for e in work_entries:
-            report += f"  • {e['topic']}\n"
-        report += "\n"
-
-    # 家人
-    if family_entries:
-        report += "👨‍👩‍👧 家人相關：\n"
-        for e in family_entries:
-            report += f"  • {e['topic']}\n"
-        report += "\n"
+    report += format_entries("學習成長", "🧠", learn_entries)
+    report += format_entries("工作", "💼", work_entries)
+    report += format_entries("家人", "👨‍👩‍👧", family_entries)
+    report += format_entries("生活日記", "📔", diary_entries)
+    report += format_entries("花費", "💰", expense_entries)
 
     report += "─" * 30 + "\n"
-    report += "💭 下週提醒自己：\n"
-    report += "  繼續記錄，持續成長 🌱\n"
+    report += "💭 下週提醒自己：持續記錄，持續成長 🌱\n"
 
     return report
 
