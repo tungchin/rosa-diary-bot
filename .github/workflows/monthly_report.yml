@@ -1,0 +1,44 @@
+name: 月報
+
+on:
+  schedule:
+    # 每月最後一天台灣時間 00:00 = UTC 16:00
+    # 用每月28日跑，腳本內自動判斷是否為當月最後一天
+    - cron: '0 16 28-31 * *'
+  workflow_dispatch:
+
+jobs:
+  monthly-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 設定 Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 安裝套件
+        run: pip install requests
+
+      - name: 檢查是否為月底
+        id: check
+        run: |
+          python -c "
+          from datetime import datetime
+          import calendar
+          today = datetime.now()
+          last_day = calendar.monthrange(today.year, today.month)[1]
+          is_last = today.day == last_day
+          print(f'IS_LAST_DAY={str(is_last).lower()}')
+          " >> $GITHUB_OUTPUT
+
+      - name: 生成並發送月報
+        if: steps.check.outputs.IS_LAST_DAY == 'true'
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DIARY_DB_ID: ${{ secrets.DIARY_DB_ID }}
+          REPORT_DB_ID: ${{ secrets.REPORT_DB_ID }}
+        run: python scripts/monthly_report.py

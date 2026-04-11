@@ -1,0 +1,30 @@
+name: 週報
+
+on:
+  schedule:
+    # 每週六台灣時間 00:00 = 週五 UTC 16:00
+    - cron: '0 16 * * 5'
+  workflow_dispatch:
+
+jobs:
+  weekly-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 設定 Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 安裝套件
+        run: pip install requests
+
+      - name: 生成並發送週報
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          DIARY_DB_ID: ${{ secrets.DIARY_DB_ID }}
+          REPORT_DB_ID: ${{ secrets.REPORT_DB_ID }}
+        run: python scripts/weekly_report.py

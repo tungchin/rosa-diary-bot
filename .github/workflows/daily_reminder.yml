@@ -1,0 +1,27 @@
+name: 每日提醒
+
+on:
+  schedule:
+    # 每天台灣時間 23:30 = UTC 15:30
+    - cron: '30 15 * * *'
+  workflow_dispatch: # 允許手動觸發測試
+
+jobs:
+  send-reminder:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 設定 Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 安裝套件
+        run: pip install requests
+
+      - name: 發送每日提醒
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+        run: python scripts/daily_reminder.py
