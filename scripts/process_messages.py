@@ -77,6 +77,46 @@ def process_updates():
         if 'text' in message:
             text = message['text']
 
+            HELP_TEXT = (
+                "📔 Rosa 日記助理 — 使用說明\n\n"
+                "✍️ 記錄日記\n"
+                "直接傳文字給我就會存進 Notion！\n\n"
+                "格式 1：直接輸入內容\n"
+                "→ 主題自動用今天日期\n\n"
+                "格式 2：第一行寫主題，第二行起寫內容\n"
+                "例如：\n"
+                "今天去看展覽\n"
+                "和乖乖一起去當代藝術館...\n\n"
+                "🎙️ 語音輸入\n"
+                "點鍵盤上的麥克風 🎤，說完後 iOS 自動轉文字發送\n\n"
+                "⏰ 自動提醒\n"
+                "每天 23:30 我會傳今日引導問題給你\n\n"
+                "🤖 AI 摘要\n"
+                "想要日記摘要時，去找 Claude Code 說：\n"
+                "「幫我看看這週的日記」\n\n"
+                "⚙️ 系統運作方式\n"
+                "• 你傳的訊息每 5 分鐘會被處理一次並存入 Notion\n"
+                "• 每日提醒、週報等排程由 GitHub Actions 在雲端執行\n"
+                "• 輸入 /about 查看完整系統架構說明"
+            )
+
+            ABOUT_TEXT = (
+                "⚙️ 日記系統架構說明\n\n"
+                "這套系統由三個部分組成：\n\n"
+                "1️⃣ Telegram Bot（就是我）\n"
+                "你傳的文字訊息會被接收，存入你的 Notion 日記資料庫。\n\n"
+                "2️⃣ GitHub Actions（雲端排程）\n"
+                "• 每 5 分鐘：檢查有沒有新訊息要處理\n"
+                "• 每天 23:30：自動傳提醒與引導問題給你\n"
+                "完全在雲端執行，不需要電腦開著。\n\n"
+                "3️⃣ Notion（儲存）\n"
+                "所有日記存在你的 Notion 資料庫，格式與原本手寫的日記一致，有主題、內容、日期、標籤。\n\n"
+                "🔍 想看完整程式碼？\n"
+                "github.com/tungchin/rosa-diary-bot"
+            )
+
+            TRIGGER_KEYWORDS = ["怎麼運作", "如何運作", "系統說明", "怎麼用", "如何使用", "說明"]
+
             if text.startswith('/start'):
                 send_message(
                     "👋 嗨 Rosa！我是你的日記助理 📔\n\n"
@@ -84,25 +124,16 @@ def process_updates():
                 )
                 continue
 
+            if text.startswith('/about'):
+                send_message(ABOUT_TEXT)
+                continue
+
+            if any(k in text for k in TRIGGER_KEYWORDS):
+                send_message(HELP_TEXT)
+                continue
+
             if text.startswith('/help'):
-                send_message(
-                    "📔 Rosa 日記助理 — 使用說明\n\n"
-                    "✍️ 記錄日記\n"
-                    "直接傳文字給我就會存進 Notion！\n\n"
-                    "格式 1：直接輸入內容\n"
-                    "→ 主題自動用今天日期\n\n"
-                    "格式 2：第一行寫主題，第二行起寫內容\n"
-                    "例如：\n"
-                    "今天去看展覽\n"
-                    "和乖乖一起去當代藝術館...\n\n"
-                    "🎙️ 語音輸入\n"
-                    "點鍵盤上的麥克風 🎤，說完後 iOS 自動轉文字發送\n\n"
-                    "⏰ 自動提醒\n"
-                    "每天 23:30 我會傳今日引導問題給你\n\n"
-                    "🤖 AI 摘要\n"
-                    "想要日記摘要時，去找 Claude Code 說：\n"
-                    "「幫我看看這週的日記」"
-                )
+                send_message(HELP_TEXT)
                 continue
 
             lines = text.strip().split('\n', 1)
