@@ -6,6 +6,11 @@ on:
     # 用每月28日跑，腳本內自動判斷是否為當月最後一天
     - cron: '0 16 28-31 * *'
   workflow_dispatch:
+    inputs:
+      force:
+        description: '強制執行（測試用）'
+        required: false
+        default: 'false'
 
 jobs:
   monthly-report:
@@ -34,7 +39,7 @@ jobs:
           " >> $GITHUB_OUTPUT
 
       - name: 生成並發送月報
-        if: steps.check.outputs.IS_LAST_DAY == 'true'
+        if: steps.check.outputs.IS_LAST_DAY == 'true' || github.event.inputs.force == 'true'
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           CHAT_ID: ${{ secrets.CHAT_ID }}
